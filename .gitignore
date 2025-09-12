@@ -1,2 +1,10 @@
 .llumo_venv
 .vscode
+__pycache__/
+*.pyc
+db.sqlite3
+.env
+__pycache__
+**/migrations/*.py
+**/migrations/*.pyc
+**/migrations/__pycache__/

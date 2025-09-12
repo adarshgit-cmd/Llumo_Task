@@ -11,9 +11,16 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import pymongo
+import dotenv
+import os
+from django.core.management.commands.runserver import Command as RunserverCommand
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+dotenv.load_dotenv()
+MONGO_URI = os.getenv('MONGO_URI')
 
 
 # Quick-start development settings - unsuitable for production
@@ -37,6 +44,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'employees',
 ]
 
 MIDDLEWARE = [
@@ -74,8 +83,11 @@ WSGI_APPLICATION = 'llumo.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'djongo',
+        'NAME': 'assessment_db',
+        'CLIENT': {
+            'host': MONGO_URI
+        }
     }
 }
 
@@ -120,3 +132,21 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+class MongoConnectionCheck:
+    @staticmethod
+    def check():
+        try:
+            client = pymongo.MongoClient(MONGO_URI)
+            client.admin.command('ping')
+            print('MongoDB connected successfully')
+        except Exception as e:
+            print(f'MongoDB connection failed: {e}')
+
+# Patch runserver to check MongoDB
+orig_run = RunserverCommand.run
+
+def run_with_mongo_check(self, *args, **kwargs):
+    MongoConnectionCheck.check()
+    orig_run(self, *args, **kwargs)
+RunserverCommand.run = run_with_mongo_check
