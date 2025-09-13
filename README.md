@@ -254,8 +254,6 @@ Authorization: Bearer your-access-token
 # Create MongoDB indexes for better performance
 python manage.py create_indexes
 
-# Check index status
-python manage.py check_indexes
 ```
 
 ### Schema Validation
