@@ -4,10 +4,17 @@ from .serializers import EmployeeSerializer
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.db import connection
 from pymongo import MongoClient
 
 class EmployeeViewSet(viewsets.ModelViewSet):
+    queryset = Employee.objects.all()
+    serializer_class = EmployeeSerializer
+    lookup_field = 'employee_id'
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     @action(detail=False, methods=['get'], url_path='search')
     def search(self, request):
         skill = request.query_params.get('skill')
@@ -49,9 +56,6 @@ class EmployeeViewSet(viewsets.ModelViewSet):
             } for r in result
         ]
         return Response(output)
-    queryset = Employee.objects.all()
-    serializer_class = EmployeeSerializer
-    lookup_field = 'employee_id'
 
     def list(self, request, *args, **kwargs):
         department = request.query_params.get('department')
@@ -102,7 +106,6 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         }
         
         return Response(response_data)
-    lookup_field = 'employee_id'
 
     def create(self, request, *args, **kwargs):
         employee_id = request.data.get('employee_id')
