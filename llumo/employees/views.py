@@ -55,24 +55,53 @@ class EmployeeViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         department = request.query_params.get('department')
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 10))
+        
+        # Calculate skip value for pagination
+        skip = (page - 1) * page_size
         
         client = MongoClient(connection.settings_dict['CLIENT']['host'])
         db = client.get_database(connection.settings_dict['NAME'])
         
+        # Build query
+        query = {}
         if department:
-            # Use MongoDB query for department filtering
-            employees = list(db.employees.find({"department": department}).sort("joining_date", -1))
-        else:
-            # Return all employees, sorted by joining_date (newest first)
-            employees = list(db.employees.find({}).sort("joining_date", -1))
+            query["department"] = department
         
-        # Convert ObjectId to string and format dates for JSON serialization
+        # Get total count for pagination metadata
+        total_count = db.employees.count_documents(query)
+        
+        # Get paginated employees
+        employees = list(db.employees.find(query)
+                        .sort("joining_date", -1)
+                        .skip(skip)
+                        .limit(page_size))
+        
+        # Convert ObjectId to string for JSON serialization
         for emp in employees:
             emp['_id'] = str(emp['_id'])
             if 'joining_date' in emp and '$date' in str(emp['joining_date']):
                 emp['joining_date'] = emp['joining_date']
         
-        return Response(employees)
+        # Calculate pagination metadata
+        total_pages = (total_count + page_size - 1) // page_size
+        has_next = page < total_pages
+        has_previous = page > 1
+        
+        response_data = {
+            'results': employees,
+            'pagination': {
+                'current_page': page,
+                'page_size': page_size,
+                'total_count': total_count,
+                'total_pages': total_pages,
+                'has_next': has_next,
+                'has_previous': has_previous
+            }
+        }
+        
+        return Response(response_data)
     lookup_field = 'employee_id'
 
     def create(self, request, *args, **kwargs):
