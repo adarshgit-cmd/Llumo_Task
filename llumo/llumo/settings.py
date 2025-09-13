@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import pymongo
-import dotenv
+import dotenv 
 import os
 from django.core.management.commands.runserver import Command as RunserverCommand
 
